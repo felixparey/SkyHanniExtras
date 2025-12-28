@@ -19,6 +19,7 @@ import at.hannibal2.skyhanni.utils.PrimitiveItemStack.Companion.makePrimitiveSta
 import at.hannibal2.skyhanni.utils.RegexUtils.matches
 import at.hannibal2.skyhanni.utils.SoundUtils
 import at.hannibal2.skyhanni.utils.repopatterns.RepoPattern
+import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
 @SkyHanniModule
@@ -26,12 +27,13 @@ object MiningNotifications {
 
     private val ASCENSION_ROPE by lazy { "ASCENSION_ROPE".toInternalName().makePrimitiveStack(1) }
 
-    enum class MiningNotificationList(val str: String, val notification: String) {
+    enum class MiningNotificationList(val str: String, val notification: String, val duration: Duration = 1.5.seconds) {
         MINESHAFT_SPAWN("§bGlacite Mineshaft", "§bMineshaft"),
         SCRAP("§9Suspicious Scrap", "§9Suspicious Scrap"),
         GOLDEN_GOBLIN("§6Golden Goblin", "§6Golden Goblin"),
         DIAMOND_GOBLIN("§bDiamond Goblin", "§bDiamond Goblin"),
-        COLD("§bCold", "§bCold");
+        COLD("§bCold", "§bCold"),
+        PICKOBULUS_READY("§dPickaxe ability ready", "Pickaxe ability ready", 3.seconds);
 
         override fun toString() = str
     }
@@ -53,6 +55,10 @@ object MiningNotifications {
         "goblin.diamondspawn",
         "§6A §r§bDiamond Goblin §r§6has spawned!",
     )
+    private val pickobulusReady by patternGroup.pattern(
+        "pickobulus.ready",
+        "§6Pickobulus §ais now available!",
+    )
 
     private val config get() = SkyHanniMod.feature.mining.notifications
 
@@ -65,6 +71,7 @@ object MiningNotifications {
         if (!config.enabled) return
         val message = event.message
         when {
+            pickobulusReady.matches(message) -> sendNotification(MiningNotificationList.PICKOBULUS_READY)
             mineshaftSpawn.matches(message) -> sendNotification(MiningNotificationList.MINESHAFT_SPAWN)
             scrapDrop.matches(message) -> sendNotification(MiningNotificationList.SCRAP)
             goldenGoblinSpawn.matches(message) -> sendNotification(MiningNotificationList.GOLDEN_GOBLIN)
@@ -105,7 +112,7 @@ object MiningNotifications {
 
     private fun sendNotification(type: MiningNotificationList) {
         if (type !in config.notifications) return
-        TitleManager.sendTitle(type.notification, duration = 1.5.seconds)
+        TitleManager.sendTitle(type.notification, duration = type.duration)
         if (config.playSound) SoundUtils.playPlingSound()
     }
 }
